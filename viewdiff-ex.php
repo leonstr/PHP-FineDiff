@@ -111,7 +111,10 @@ if ( (function_exists("get_magic_quotes_gpc") && get_magic_quotes_gpc()) || (ini
 	stripslashes_deep($_REQUEST);
 	}
 
-require_once 'finediff.php';
+use GorHill\FineDiff\FineDiff;
+use GorHill\FineDiff\FineDiffInsertOp;
+use GorHill\FineDiff\FineDiffDeleteOp;
+use GorHill\FineDiff\FineDiffCopyOp;
 
 $from = '';
 $to = '';

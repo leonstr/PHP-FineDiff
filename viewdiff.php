@@ -34,7 +34,7 @@ if ( (function_exists("get_magic_quotes_gpc") && get_magic_quotes_gpc()) || (ini
 	stripslashes_deep($_POST);
 	}
 
-include 'finediff.php';
+use GorHill\FineDiff\FineDiff;
 
 $cache_lo_water_mark = 900;
 $cache_hi_water_mark = 1100;
