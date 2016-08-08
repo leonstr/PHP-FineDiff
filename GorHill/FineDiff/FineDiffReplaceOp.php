@@ -36,15 +36,22 @@ namespace GorHill\FineDiff;
  */
 
 class FineDiffReplaceOp extends FineDiffOp {
-    public function __construct($fromLen, $text) {
+    public $encoding;
+
+    public function __construct($fromLen, $text, $encoding = null) {
         $this->fromLen = $fromLen;
         $this->text = $text;
+        $this->encoding = $encoding;
+        if ( $encoding === null )
+        {
+            $this->encoding = mb_internal_encoding();
+        }
     }
     public function getFromLen() {
         return $this->fromLen;
     }
     public function getToLen() {
-        return mb_strlen($this->text);
+        return mb_strlen($this->text, $this->encoding);
     }
     public function getText() {
         return $this->text;
@@ -56,7 +63,7 @@ class FineDiffReplaceOp extends FineDiffOp {
         else {
             $del_opcode = "d{$this->fromLen}";
         }
-        $to_len = mb_strlen($this->text);
+        $to_len = mb_strlen($this->text, $this->encoding);
         if ( $to_len === 1 ) {
             return "{$del_opcode}i:{$this->text}";
         }

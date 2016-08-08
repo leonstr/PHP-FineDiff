@@ -43,7 +43,10 @@ namespace GorHill\FineDiff;
 class FineDiffOps {
     public $edits = array();
 
-    public function appendOpcode($opcode, $from, $from_offset, $from_len) {
+    public function appendOpcode($opcode, $from, $from_offset, $from_len, $encoding = null) {
+        if ( $encoding === null ) {
+            $encoding = mb_internal_encoding();
+        }
         if ( $opcode === 'c' ) {
             $edits[] = new FineDiffCopyOp($from_len);
         }
@@ -51,7 +54,7 @@ class FineDiffOps {
             $edits[] = new FineDiffDeleteOp($from_len);
         }
         else /* if ( $opcode === 'i' ) */ {
-            $edits[] = new FineDiffInsertOp(mb_substr($from, $from_offset, $from_len));
+            $edits[] = new FineDiffInsertOp(mb_substr($from, $from_offset, $from_len, $encoding), $encoding);
         }
     }
     public $edits = array();

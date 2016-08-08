@@ -36,20 +36,27 @@ namespace GorHill\FineDiff;
  */
 
 class FineDiffInsertOp extends FineDiffOp {
-    public function __construct($text) {
+    public $encoding;
+    
+    public function __construct($text, $encoding = null) {
         $this->text = $text;
+        $this->encoding = $encoding;
+        if ( $encoding === null )
+        {
+            $this->encoding = mb_internal_encoding();
+        }
     }
     public function getFromLen() {
         return 0;
     }
     public function getToLen() {
-        return mb_strlen($this->text);
+        return mb_strlen($this->text, $this->encoding);
     }
     public function getText() {
         return $this->text;
     }
     public function getOpcode() {
-        $to_len = mb_strlen($this->text);
+        $to_len = mb_strlen($this->text, $this->encoding);
         if ( $to_len === 1 ) {
             return "i:{$this->text}";
         }

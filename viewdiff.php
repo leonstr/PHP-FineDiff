@@ -61,7 +61,7 @@ if ( isset($_GET['data']) ) {
 			$from_text = $data_from_serialization['from_text'];
 			$diff_opcodes = $data_from_serialization['diff_opcodes'];
 			$diff_opcodes_len = strlen($diff_opcodes);
-			$to_text = FineDiff::renderToTextFromOpcodes($from_text, $diff_opcodes);
+			$to_text = FineDiff::renderToTextFromOpcodes($from_text, $diff_opcodes, 'UTF-8');
 			$data_key = $data_from_serialization['data_key'];
 			}
 		else {
@@ -97,7 +97,7 @@ else {
 		FineDiff::$wordGranularity,
 		FineDiff::$characterGranularity
 		);
-	$diff_opcodes = FineDiff::getDiffOpcodes($from_text, $to_text, $granularityStacks[$granularity]);
+	$diff_opcodes = FineDiff::getDiffOpcodes($from_text, $to_text, $granularityStacks[$granularity], 'UTF-8');
 	$diff_opcodes_len = strlen($diff_opcodes);
 	$exec_time = gettimeofday(true) - $start_time;
 	if ( $diff_opcodes_len ) {
@@ -137,7 +137,7 @@ else {
 		}
 	}
 
-$rendered_diff = FineDiff::renderDiffToHTMLFromOpcodes($from_text, $diff_opcodes);
+$rendered_diff = FineDiff::renderDiffToHTMLFromOpcodes($from_text, $diff_opcodes, 'UTF-8');
 $from_len = strlen($from_text);
 $to_len = strlen($to_text);
 
