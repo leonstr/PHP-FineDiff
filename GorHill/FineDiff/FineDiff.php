@@ -105,6 +105,7 @@ class FineDiff {
      *
      */
     public $encoding;
+    public $greed;
 
     /**
      * Constructor
@@ -113,11 +114,12 @@ class FineDiff {
      * a particular stack tailored to the specific content of a document can
      * be passed.
      */
-    public function __construct($from_text = '', $to_text = '', $granularityStack = null, $encoding = null) {
+    public function __construct($from_text = '', $to_text = '', $granularityStack = null, $greed=4, $encoding = null) {
         // setup stack for generic text documents by default
         $this->granularityStack = $granularityStack ? $granularityStack : FineDiff::$characterGranularity;
         $this->edits = array();
         $this->from_text = $from_text;
+        $this->greed = $greed;
         $this->encoding = $encoding;
         if($encoding === null)
         {
@@ -165,11 +167,11 @@ class FineDiff {
      * Return an opcodes string describing the diff between a "From" and a
      * "To" string
      */
-    public static function getDiffOpcodes($from, $to, $granularities = null, $encoding = null) {
+    public static function getDiffOpcodes($from, $to, $granularities = null, $greed=4, $encoding = null) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
-        $diff = new FineDiff($from, $to, $granularities, $encoding);
+        $diff = new FineDiff($from, $to, $granularities, $greed, $encoding);
         return $diff->getOpcodes();
     }
 
@@ -311,7 +313,7 @@ class FineDiff {
     private function _processGranularity($from_segment, $to_segment) {
         $delimiters = $this->granularityStack[$this->stackpointer++];
         $has_next_stage = $this->stackpointer < count($this->granularityStack);
-        foreach ( FineDiff::doFragmentDiff($from_segment, $to_segment, $delimiters, $this->encoding) as $fragment_edit ) {
+        foreach ( FineDiff::doFragmentDiff($from_segment, $to_segment, $delimiters, $this->greed, $this->encoding) as $fragment_edit ) {
             // increase granularity
             if ( $fragment_edit instanceof FineDiffReplaceOp && $has_next_stage ) {
                 $this->_processGranularity(
@@ -342,12 +344,12 @@ class FineDiff {
      * This function is naturally recursive, however for performance purpose
      * a local job queue is used instead of outright recursivity.
      */
-    private static function doFragmentDiff($from_text, $to_text, $delimiters, $encoding = null) {
+    private static function doFragmentDiff($from_text, $to_text, $delimiters, $greed=4, $encoding = null) {
         // Empty delimiter means character-level diffing.
         // In such case, use code path optimized for character-level
         // diffing.
         if ( empty($delimiters) ) {
-            return FineDiff::doCharDiff($from_text, $to_text, $encoding);
+            return FineDiff::doCharDiff($from_text, $to_text, $greed, $encoding);
         }
 
         if ($encoding === null) {
@@ -492,7 +494,7 @@ class FineDiff {
      * performant. For word-sized strings, doCharDiff() is somewhat more
      * performant.
      */
-    private static function doCharDiff($from_text, $to_text, $encoding = null) {
+    private static function doCharDiff($from_text, $to_text, $greed=4, $encoding = null) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
@@ -548,7 +550,7 @@ class FineDiff {
                 }
             }
             // match found
-            if ( $copy_len ) {
+            if ( $copy_len >= $greed ) {
                 $jobs[] = array($from_segment_start, $from_copy_start, $to_segment_start, $to_copy_start);
                 $result[$from_copy_start * 4 + 2] = new FineDiffCopyOp($copy_len);
                 $jobs[] = array($from_copy_start + $copy_len, $from_segment_end, $to_copy_start + $copy_len, $to_segment_end);
