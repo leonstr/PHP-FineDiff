@@ -34,6 +34,8 @@ if ( (function_exists("get_magic_quotes_gpc") && get_magic_quotes_gpc()) || (ini
 	stripslashes_deep($_POST);
 	}
 
+mb_internal_encoding('UTF-8');
+
 use GorHill\FineDiff\FineDiff;
 
 $cache_lo_water_mark = 900;
@@ -61,7 +63,7 @@ if ( isset($_GET['data']) ) {
 			$from_text = $data_from_serialization['from_text'];
 			$diff_opcodes = $data_from_serialization['diff_opcodes'];
 			$diff_opcodes_len = strlen($diff_opcodes);
-			$to_text = FineDiff::renderToTextFromOpcodes($from_text, $diff_opcodes, 'UTF-8');
+			$to_text = FineDiff::renderToTextFromOpcodes($from_text, $diff_opcodes);
 			$data_key = $data_from_serialization['data_key'];
 			}
 		else {
@@ -73,8 +75,11 @@ if ( isset($_GET['data']) ) {
 // new diff
 else {
 	if ( isset($_POST['granularity']) && ctype_digit($_POST['granularity']) ) {
-		$granularity = max(min(intval($_POST['granularity']),3),0);
-		}
+		$granularity = max(min(intval($_POST['granularity']),4),0);
+	}
+	if ( $granularity == 4 ) {
+		mb_internal_encoding('8bit');
+	}
 	if ( !empty($_POST['from']) || !empty($_POST['to'])) {
 		if ( !empty($_POST['from']) ) {
 			$from_text = $_POST['from'];
@@ -83,21 +88,25 @@ else {
 			$to_text = $_POST['to'];
 			}
 		}
+
 	// limit input
 	$from_text = substr($from_text, 0, 1024*100);
 	$to_text = substr($to_text, 0, 1024*100);
 
 	// ensure input is suitable for diff
-	$from_text = mb_convert_encoding($from_text, 'HTML-ENTITIES', 'UTF-8');
-	$to_text = mb_convert_encoding($to_text, 'HTML-ENTITIES', 'UTF-8');
+	if ( $granularity != 4 ) {
+		$from_text = mb_convert_encoding($from_text, 'HTML-ENTITIES', 'UTF-8');
+		$to_text = mb_convert_encoding($to_text, 'HTML-ENTITIES', 'UTF-8');
+	}
 
 	$granularityStacks = array(
 		FineDiff::$paragraphGranularity,
 		FineDiff::$sentenceGranularity,
 		FineDiff::$wordGranularity,
+		FineDiff::$characterGranularity,
 		FineDiff::$characterGranularity
 		);
-	$diff_opcodes = FineDiff::getDiffOpcodes($from_text, $to_text, $granularityStacks[$granularity], 'UTF-8');
+	$diff_opcodes = FineDiff::getDiffOpcodes($from_text, $to_text, $granularityStacks[$granularity], 4);
 	$diff_opcodes_len = strlen($diff_opcodes);
 	$exec_time = gettimeofday(true) - $start_time;
 	if ( $diff_opcodes_len ) {
@@ -137,7 +146,7 @@ else {
 		}
 	}
 
-$rendered_diff = FineDiff::renderDiffToHTMLFromOpcodes($from_text, $diff_opcodes, 'UTF-8');
+$rendered_diff = FineDiff::renderDiffToHTMLFromOpcodes($from_text, $diff_opcodes, null, ($granularity != 4));
 $from_len = strlen($from_text);
 $to_len = strlen($to_text);
 
@@ -150,9 +159,9 @@ echo $rendered_diff; ?></div></div>
 </div>
 <form action="viewdiff.php" method="post">
 <p style="margin:1em 0 0.5em 0">Enter text to diff below:</p>
-<div class="panecontainer" style="display:inline-block;width:49.5%"><p>From</p><div><textarea name="from" class="pane"><?php echo htmlentities($from_text, ENT_QUOTES, 'UTF-8'); ?></textarea></div></div>
-<div class="panecontainer" style="display:inline-block;width:49.5%"><p>To</p><div><textarea name="to" class="pane"><?php echo htmlentities($to_text, ENT_QUOTES, 'UTF-8'); ?></textarea></div></div>
-<p id="params">Granularity:<input name="granularity" type="radio" value="0"<?php if ( $granularity === 0 ) { echo ' checked="checked"'; } ?>>&thinsp;Paragraph/lines&ensp;<input name="granularity" type="radio" value="1"<?php if ( $granularity === 1 ) { echo ' checked="checked"'; } ?>>&thinsp;Sentence&ensp;<input name="granularity" type="radio" value="2"<?php if ( $granularity === 2 ) { echo ' checked="checked"'; } ?>>&thinsp;Word&ensp;<input name="granularity" type="radio" value="3"<?php if ( $granularity === 3 ) { echo ' checked="checked"'; } ?>>&thinsp;Character&emsp;<input type="submit" value="View diff">&emsp;<a href="viewdiff.php"><button>Clear all</button></a></p>
+<div class="panecontainer" style="display:inline-block;width:49.5%"><p>From</p><div><textarea name="from" class="pane"><?php echo $from_text; ?></textarea></div></div>
+<div class="panecontainer" style="display:inline-block;width:49.5%"><p>To</p><div><textarea name="to" class="pane"><?php echo $to_text; ?></textarea></div></div>
+<p id="params">Granularity:<input name="granularity" type="radio" value="0"<?php if ( $granularity === 0 ) { echo ' checked="checked"'; } ?>>&thinsp;Paragraph/lines&ensp;<input name="granularity" type="radio" value="1"<?php if ( $granularity === 1 ) { echo ' checked="checked"'; } ?>>&thinsp;Sentence&ensp;<input name="granularity" type="radio" value="2"<?php if ( $granularity === 2 ) { echo ' checked="checked"'; } ?>>&thinsp;Word&ensp;<input name="granularity" type="radio" value="3"<?php if ( $granularity === 3 ) { echo ' checked="checked"'; } ?>>&thinsp;Character&ensp;<input name="granularity" type="radio" value="4"<?php if ( $granularity === 4 ) { echo ' checked="checked"'; } ?>>&thinsp;Binary&emsp;<input type="submit" value="View diff">&emsp;<a href="viewdiff.php"><button>Clear all</button></a></p>
 </form>
 <p style="margin-top:1em"><a href="viewdiff-ex.php">Go to main page</a></p>
 <script type="text/javascript">

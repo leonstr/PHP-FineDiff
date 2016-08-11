@@ -140,23 +140,23 @@ class FineDiff {
         return implode('', $opcodes);
     }
 
-    public function renderDiffToHTML() {
+    public function renderDiffToHTML($textToEntities=true) {
         $in_offset = 0;
         ob_start();
         foreach ( $this->edits as $edit ) {
             $n = $edit->getFromLen();
             if ( $edit instanceof FineDiffCopyOp ) {
-                FineDiff::renderDiffToHTMLFromOpcode('c', $this->from_text, $in_offset, $n);
+                FineDiff::renderDiffToHTMLFromOpcode('c', $this->from_text, $in_offset, $n, null, $textToEntities);
             }
             else if ( $edit instanceof FineDiffDeleteOp ) {
-                FineDiff::renderDiffToHTMLFromOpcode('d', $this->from_text, $in_offset, $n);
+                FineDiff::renderDiffToHTMLFromOpcode('d', $this->from_text, $in_offset, $n, null, $textToEntities);
             }
             else if ( $edit instanceof FineDiffInsertOp ) {
-                FineDiff::renderDiffToHTMLFromOpcode('i', $edit->getText(), 0, $edit->getToLen());
+                FineDiff::renderDiffToHTMLFromOpcode('i', $edit->getText(), 0, $edit->getToLen(), null, $textToEntities);
             }
             else /* if ( $edit instanceof FineDiffReplaceOp ) */ {
-                FineDiff::renderDiffToHTMLFromOpcode('d', $this->from_text, $in_offset, $n);
-                FineDiff::renderDiffToHTMLFromOpcode('i', $edit->getText(), 0, $edit->getToLen());
+                FineDiff::renderDiffToHTMLFromOpcode('d', $this->from_text, $in_offset, $n, null, $textToEntities);
+                FineDiff::renderDiffToHTMLFromOpcode('i', $edit->getText(), 0, $edit->getToLen(), null, $textToEntities);
             }
             $in_offset += $n;
         }
@@ -202,12 +202,12 @@ class FineDiff {
     /**------------------------------------------------------------------------
      * Render the diff to an HTML string
      */
-    public static function renderDiffToHTMLFromOpcodes($from, $opcodes, $encoding = null) {
+    public static function renderDiffToHTMLFromOpcodes($from, $opcodes, $encoding = null, $textToEntities=true) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
         ob_start();
-        FineDiff::renderFromOpcodes($from, $opcodes, array('\GorHill\FineDiff\FineDiff','renderDiffToHTMLFromOpcode'), $encoding);
+        FineDiff::renderFromOpcodes($from, $opcodes, array('\GorHill\FineDiff\FineDiff','renderDiffToHTMLFromOpcode'), $encoding, $textToEntities);
         return ob_get_clean();
     }
 
@@ -215,7 +215,7 @@ class FineDiff {
      * Generic opcodes parser, user must supply callback for handling
      * single opcode
      */
-    public static function renderFromOpcodes($from, $opcodes, $callback, $encoding = null) {
+    public static function renderFromOpcodes($from, $opcodes, $callback, $encoding = null, $textToEntities=true) {
         if ( !is_callable($callback) ) {
             return;
         }
@@ -235,15 +235,15 @@ class FineDiff {
                 $n = 1;
             }
             if ( $opcode === 'c' ) { // copy n characters from source
-                call_user_func($callback, 'c', $from, $from_offset, $n, $encoding);
+                call_user_func($callback, 'c', $from, $from_offset, $n, $encoding, $textToEntities);
                 $from_offset += $n;
             }
             else if ( $opcode === 'd' ) { // delete n characters from source
-                call_user_func($callback, 'd', $from, $from_offset, $n, $encoding);
+                call_user_func($callback, 'd', $from, $from_offset, $n, $encoding, $textToEntities);
                 $from_offset += $n;
             }
             else /* if ( $opcode === 'i' ) */ { // insert n characters from opcodes
-                call_user_func($callback, 'i', $opcodes, $opcodes_offset + 1, $n, $encoding);
+                call_user_func($callback, 'i', $opcodes, $opcodes_offset + 1, $n, $encoding, $textToEntities);
                 $opcodes_offset += 1 + $n;
             }
         }
@@ -609,23 +609,38 @@ class FineDiff {
         }
     }
 
-    private static function renderDiffToHTMLFromOpcode($opcode, $from, $from_offset, $from_len, $encoding = null) {
+    private static function renderDiffToHTMLFromOpcode($opcode, $from, $from_offset, $from_len, $encoding = null, $textToEntities=true) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
 
         if ( $opcode === 'c' ) {
-            echo htmlentities(mb_substr($from, $from_offset, $from_len, $encoding));
+            if ( $textToEntities ) {
+                echo htmlentities(mb_substr($from, $from_offset, $from_len, $encoding));
+            } 
+            else {
+                echo mb_substr($from, $from_offset, $from_len, $encoding);
+            }
         }
         else if ( $opcode === 'd' ) {
             $deletion = mb_substr($from, $from_offset, $from_len, $encoding);
             if ( strcspn($deletion, " \n\r") === 0 ) { // no mb_ here is okay
                 $deletion = str_replace(array("\n","\r"), array('\n','\r'), $deletion);
             }
-            echo '<del>', htmlspecialchars($deletion), '</del>';
+            if ( $textToEntities ) {
+                echo '<del>', htmlspecialchars($deletion), '</del>';
+            }
+            else {
+                echo '<del>', $deletion, '</del>';
+            }
         }
         else /* if ( $opcode === 'i' ) */ {
-            echo '<ins>', htmlspecialchars(mb_substr($from, $from_offset, $from_len, $encoding), ENT_QUOTES), '</ins>';
+            if ( $textToEntities ) {
+                echo '<ins>', htmlspecialchars(mb_substr($from, $from_offset, $from_len, $encoding), ENT_QUOTES), '</ins>';
+            }
+            else {
+                echo '<ins>', mb_substr($from, $from_offset, $from_len, $encoding), '</ins>';
+            }
         }
     }
     

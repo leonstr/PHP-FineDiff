@@ -120,7 +120,7 @@ $from = '';
 $to = '';
 $granularity = 2;
 if ( isset($_REQUEST['granularity']) && ctype_digit($_REQUEST['granularity']) ) {
-	$granularity = max(min(intval($_REQUEST['granularity']),3),0);
+	$granularity = max(min(intval($_REQUEST['granularity']),4),0);
 	}
 $rendered_diff = '';
 if ( !empty($_REQUEST['from']) || !empty($_REQUEST['to'])) {
@@ -150,6 +150,7 @@ if ( $use_stdlib_diff ) {
 			FineDiff::paragraphDelimiters,
 			FineDiff::sentenceDelimiters,
 			FineDiff::wordDelimiters,
+			FineDiff::characterDelimiters,
 			FineDiff::characterDelimiters
 			);
 		function extractFragments($text, $delimiter) {
@@ -217,13 +218,14 @@ else {
 		FineDiff::$paragraphGranularity,
 		FineDiff::$sentenceGranularity,
 		FineDiff::$wordGranularity,
+		FineDiff::$characterGranularity,
 		FineDiff::$characterGranularity
 		);
 
 	$diff = new FineDiff($from, $to, $granularityStacks[$granularity]);
 	$edits = $diff->getOps();
 	$exec_time = sprintf('%.3f sec', gettimeofday(true) - $start_time);
-	$rendered_diff = $diff->renderDiffToHTML();
+	$rendered_diff = $diff->renderDiffToHTML(($granularity != 4));
 	$rendering_time = sprintf('%.3f sec', gettimeofday(true) - $start_time);
 	}
 
@@ -258,7 +260,7 @@ else {
 <form action="viewdiff-ex.php" method="post">
 <div class="panecontainer"><p>From:</p><div><textarea name="from" class="pane"><?php echo htmlentities($from); ?></textarea></div></div>
 <div class="panecontainer"><p>To:</p><div><textarea name="to" class="pane"><?php echo htmlentities($to); ?></textarea></div></div>
-<p id="params">Granularity:<input name="granularity" type="radio" value="0"<?php if ( $granularity === 0 ) { echo ' checked="checked"'; } ?>>&thinsp;Paragraph/lines&ensp;<input name="granularity" type="radio" value="1"<?php if ( $granularity === 1 ) { echo ' checked="checked"'; } ?>>&thinsp;Sentence&ensp;<input name="granularity" type="radio" value="2"<?php if ( $granularity === 2 ) { echo ' checked="checked"'; } ?>>&thinsp;Word&ensp;<input name="granularity" type="radio" value="3"<?php if ( $granularity === 3 ) { echo ' checked="checked"'; } ?>>&thinsp;Character&emsp;<!-- <input name="XDEBUG_PROFILE" type="hidden" value=""> --><input type="submit" value="Compute diff">&emsp;<input name="stdlib" type="checkbox" value="1"<?php if ( $use_stdlib_diff ) { echo ' checked="checked"'; } ?>><a href="http://pear.php.net/package/Text_Diff/"><code>Text_Diff</code></a> lib (for comparison purpose) <sup style="font-size:x-small"><a href="#notes">see notes</a></sup></p>
+<p id="params">Granularity:<input name="granularity" type="radio" value="0"<?php if ( $granularity === 0 ) { echo ' checked="checked"'; } ?>>&thinsp;Paragraph/lines&ensp;<input name="granularity" type="radio" value="1"<?php if ( $granularity === 1 ) { echo ' checked="checked"'; } ?>>&thinsp;Sentence&ensp;<input name="granularity" type="radio" value="2"<?php if ( $granularity === 2 ) { echo ' checked="checked"'; } ?>>&thinsp;Word&ensp;<input name="granularity" type="radio" value="3"<?php if ( $granularity === 3 ) { echo ' checked="checked"'; } ?>>&thinsp;Character&ensp;<input name="granularity" type="radio" value="4"<?php if ( $granularity === 4 ) { echo ' checked="checked"'; } ?>>&thinsp;Binary&emsp;<!-- <input name="XDEBUG_PROFILE" type="hidden" value=""> --><input type="submit" value="Compute diff">&emsp;<input name="stdlib" type="checkbox" value="1"<?php if ( $use_stdlib_diff ) { echo ' checked="checked"'; } ?>><a href="http://pear.php.net/package/Text_Diff/"><code>Text_Diff</code></a> lib (for comparison purpose) <sup style="font-size:x-small"><a href="#notes">see notes</a></sup></p>
 </form>
 <div class="panecontainer"><p>Diff stats:</p><div><div class="pane">
 <b>Diff execution time:</b> <?php echo $exec_time; ?><br>
