@@ -44,7 +44,7 @@ class FineDiffReplaceOp extends FineDiffOp {
         return $this->fromLen;
     }
     public function getToLen() {
-        return strlen($this->text);
+        return mb_strlen($this->text);
     }
     public function getText() {
         return $this->text;
@@ -56,7 +56,7 @@ class FineDiffReplaceOp extends FineDiffOp {
         else {
             $del_opcode = "d{$this->fromLen}";
         }
-        $to_len = strlen($this->text);
+        $to_len = mb_strlen($this->text);
         if ( $to_len === 1 ) {
             return "{$del_opcode}i:{$this->text}";
         }

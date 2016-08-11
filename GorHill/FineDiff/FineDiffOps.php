@@ -41,6 +41,8 @@ namespace GorHill\FineDiff;
  * Collection of ops
  */
 class FineDiffOps {
+    public $edits = array();
+
     public function appendOpcode($opcode, $from, $from_offset, $from_len) {
         if ( $opcode === 'c' ) {
             $edits[] = new FineDiffCopyOp($from_len);
@@ -49,7 +51,7 @@ class FineDiffOps {
             $edits[] = new FineDiffDeleteOp($from_len);
         }
         else /* if ( $opcode === 'i' ) */ {
-            $edits[] = new FineDiffInsertOp(substr($from, $from_offset, $from_len));
+            $edits[] = new FineDiffInsertOp(mb_substr($from, $from_offset, $from_len));
         }
     }
     public $edits = array();
