@@ -45,12 +45,6 @@ class FineDiffCopyOp extends FineDiffOp {
     public function getToLen() {
         return $this->len;
     }
-    public function getOpcode() {
-        if ( $this->len === 1 ) {
-            return 'c';
-        }
-        return "c{$this->len}";
-    }
     public function increase($size) {
         return $this->len += $size;
     }

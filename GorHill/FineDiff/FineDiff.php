@@ -135,9 +135,46 @@ class FineDiff {
     public function getOpcodes() {
         $opcodes = array();
         foreach ( $this->edits as $edit ) {
-            $opcodes[] = $edit->getOpcode();
+            $opcodes[] = $this->getOpcode($edit);
         }
         return implode('', $opcodes);
+    }
+
+    public function getOpcode($edit) {
+        $to_len = $edit->getToLen();
+        $from_len = $edit->getFromLen();
+
+        if ( $edit instanceof FineDiffCopyOp ) {
+            if ( $to_len === 1 ) {
+                return 'c';
+            }
+            return 'c'.$to_len;
+        }
+        else if ( $edit instanceof FineDiffDeleteOp ) {
+            if ( $from_len === 1 ) {
+                return 'd';
+            }
+            return 'd'.$from_len;
+        }
+        else if ( $edit instanceof FineDiffInsertOp ) {
+            if ( $to_len === 1 ) {
+                return 'i:'.$edit->getText();
+            }
+            return 'i'.$to_len.':'.$edit->getText();
+        }
+        else /* if ( $edit instanceof FineDiffReplaceOp ) */ {
+            if ( $from_len === 1 ) {
+                $del_opcode = 'd';
+            }
+            else {
+                $del_opcode = 'd'.$from_len;
+            }
+
+            if ( $to_len === 1 ) {
+                return $del_opcode.'i:'.$edit->getText().'';
+            }
+            return $del_opcode.'i'.$to_len.':'.$edit->getText();
+        }
     }
 
     public function renderDiffToHTML($textToEntities=true) {

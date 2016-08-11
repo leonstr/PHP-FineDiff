@@ -55,11 +55,4 @@ class FineDiffInsertOp extends FineDiffOp {
     public function getText() {
         return $this->text;
     }
-    public function getOpcode() {
-        $to_len = mb_strlen($this->text, $this->encoding);
-        if ( $to_len === 1 ) {
-            return "i:{$this->text}";
-        }
-        return "i{$to_len}:{$this->text}";
-    }
 }
