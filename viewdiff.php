@@ -36,7 +36,7 @@ if ( (function_exists("get_magic_quotes_gpc") && get_magic_quotes_gpc()) || (ini
 
 mb_internal_encoding('UTF-8');
 
-use GorHill\FineDiff\FineDiff;
+use GorHill\FineDiff\FineDiffHTML;
 
 $cache_lo_water_mark = 900;
 $cache_hi_water_mark = 1100;
@@ -100,13 +100,13 @@ else {
 	}
 
 	$granularityStacks = array(
-		FineDiff::$paragraphGranularity,
-		FineDiff::$sentenceGranularity,
-		FineDiff::$wordGranularity,
-		FineDiff::$characterGranularity,
-		FineDiff::$characterGranularity
+		FineDiffHTML::$paragraphGranularity,
+		FineDiffHTML::$sentenceGranularity,
+		FineDiffHTML::$wordGranularity,
+		FineDiffHTML::$characterGranularity,
+		FineDiffHTML::$characterGranularity
 		);
-	$diff_opcodes = FineDiff::getDiffOpcodes($from_text, $to_text, $granularityStacks[$granularity], 4);
+	$diff_opcodes = FineDiffHTML::getDiffOpcodes($from_text, $to_text, $granularityStacks[$granularity], 4);
 	$diff_opcodes_len = strlen($diff_opcodes);
 	$exec_time = gettimeofday(true) - $start_time;
 	if ( $diff_opcodes_len ) {
@@ -146,7 +146,7 @@ else {
 		}
 	}
 
-$rendered_diff = FineDiff::renderDiffToHTMLFromOpcodes($from_text, $diff_opcodes, null, ($granularity != 4));
+$rendered_diff = FineDiffHTML::renderDiffToHTMLFromOpcodes($from_text, $diff_opcodes, null, ($granularity != 4));
 $from_len = strlen($from_text);
 $to_len = strlen($to_text);
 
