@@ -120,7 +120,7 @@ class FineDiff {
      */
     public function __construct($from_text = '', $to_text = '', $granularityStack = null, $greed=4, $encoding = null) {
         // setup stack for generic text documents by default
-        $this->granularityStack = $granularityStack ? $granularityStack : FineDiff::$characterGranularity;
+        $this->granularityStack = $granularityStack ? $granularityStack : static::$characterGranularity;
         $this->edits = array();
         $this->from_text = $from_text;
         $this->greed = $greed;
@@ -201,7 +201,7 @@ class FineDiff {
             $encoding = mb_internal_encoding();
         }
         $diffops = new FineDiffOps($this->encoding);
-        FineDiff::renderFromOpcodes(null, $opcodes, array($diffops,'appendOpcode'), $encoding);
+        static::renderFromOpcodes(null, $opcodes, array($diffops,'appendOpcode'), $encoding);
         return $diffops->edits;
     }
 
@@ -213,7 +213,7 @@ class FineDiff {
             $encoding = mb_internal_encoding();
         }
         ob_start();
-        FineDiff::renderFromOpcodes($from, $opcodes, array('\GorHill\FineDiff\FineDiff','renderToTextFromOpcode'), $encoding);
+        static::renderFromOpcodes($from, $opcodes, array('\GorHill\FineDiff\FineDiff','renderToTextFromOpcode'), $encoding);
         return ob_get_clean();
     }
 
@@ -261,25 +261,25 @@ class FineDiff {
 
     const paragraphDelimiters = "\n\r";
     public static $paragraphGranularity = array(
-        FineDiff::paragraphDelimiters
+        self::paragraphDelimiters
     );
     const sentenceDelimiters = ".\n\r";
     public static $sentenceGranularity = array(
-        FineDiff::paragraphDelimiters,
-        FineDiff::sentenceDelimiters
+        self::paragraphDelimiters,
+        self::sentenceDelimiters
     );
     const wordDelimiters = " \t.\n\r";
     public static $wordGranularity = array(
-        FineDiff::paragraphDelimiters,
-        FineDiff::sentenceDelimiters,
-        FineDiff::wordDelimiters
+        self::paragraphDelimiters,
+        self::sentenceDelimiters,
+        self::wordDelimiters
     );
     const characterDelimiters = "";
     public static $characterGranularity = array(
-        FineDiff::paragraphDelimiters,
-        FineDiff::sentenceDelimiters,
-        FineDiff::wordDelimiters,
-        FineDiff::characterDelimiters
+        self::paragraphDelimiters,
+        self::sentenceDelimiters,
+        self::wordDelimiters,
+        self::characterDelimiters
     );
 
     public static $textStack = array(
@@ -297,7 +297,7 @@ class FineDiff {
     /**
      * Entry point to compute the diff.
      */
-    private function doDiff($from_text, $to_text) {
+    protected function doDiff($from_text, $to_text) {
         $this->last_edit = false;
         $this->stackpointer = 0;
         $this->from_text = $from_text;
@@ -316,10 +316,10 @@ class FineDiff {
      * Incrementally increasing the granularity is key to compute the
      * overall diff in a very efficient way.
      */
-    private function _processGranularity($from_segment, $to_segment) {
+    protected function _processGranularity($from_segment, $to_segment) {
         $delimiters = $this->granularityStack[$this->stackpointer++];
         $has_next_stage = $this->stackpointer < count($this->granularityStack);
-        foreach ( FineDiff::doFragmentDiff($from_segment, $to_segment, $delimiters, $this->greed, $this->encoding) as $fragment_edit ) {
+        foreach ( static::doFragmentDiff($from_segment, $to_segment, $delimiters, $this->greed, $this->encoding) as $fragment_edit ) {
             // increase granularity
             if ( $fragment_edit instanceof FineDiffReplaceOp && $has_next_stage ) {
                 $this->_processGranularity(
@@ -350,12 +350,12 @@ class FineDiff {
      * This function is naturally recursive, however for performance purpose
      * a local job queue is used instead of outright recursivity.
      */
-    private static function doFragmentDiff($from_text, $to_text, $delimiters, $greed=4, $encoding = null) {
+    protected static function doFragmentDiff($from_text, $to_text, $delimiters, $greed=4, $encoding = null) {
         // Empty delimiter means character-level diffing.
         // In such case, use code path optimized for character-level
         // diffing.
         if ( empty($delimiters) ) {
-            return FineDiff::doCharDiff($from_text, $to_text, $greed, $encoding);
+            return static::doCharDiff($from_text, $to_text, $greed, $encoding);
         }
 
         if ($encoding === null) {
@@ -367,8 +367,8 @@ class FineDiff {
         // fragment-level diffing
         $from_text_len = mb_strlen($from_text, $encoding);
         $to_text_len = mb_strlen($to_text, $encoding);
-        $from_fragments = FineDiff::extractFragments($from_text, $delimiters, $encoding);
-        $to_fragments = FineDiff::extractFragments($to_text, $delimiters, $encoding);
+        $from_fragments = static::extractFragments($from_text, $delimiters, $encoding);
+        $to_fragments = static::extractFragments($to_text, $delimiters, $encoding);
 
         $jobs = array(array(0, $from_text_len, 0, $to_text_len));
 
@@ -450,7 +450,7 @@ class FineDiff {
                         // if the matching string is just made up of delimiters then don't count it as a match. This prevents an
                         // excessive number of whitespaces being seen as matches and therefore breaking up a long replace segment
                         // to no useful purpose.
-                        if ($fragment_index_offset > $from_base_fragment_length || self::mb_strspn($from_base_fragment, $delimiters, 0, null, $encoding)===0) {
+                        if ($fragment_index_offset > $from_base_fragment_length || static::mb_strspn($from_base_fragment, $delimiters, 0, null, $encoding)===0) {
                             $best_copy_length = $fragment_index_offset;
                             $best_from_start = $from_base_fragment_index;
                             $best_to_start = $to_base_fragment_index;
@@ -500,7 +500,7 @@ class FineDiff {
      * performant. For word-sized strings, doCharDiff() is somewhat more
      * performant.
      */
-    private static function doCharDiff($from_text, $to_text, $greed=4, $encoding = null) {
+    protected static function doCharDiff($from_text, $to_text, $greed=4, $encoding = null) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
@@ -580,14 +580,14 @@ class FineDiff {
      * Careful: No check is performed as to the validity of the
      * delimiters.
      */
-    private static function extractFragments($text, $delimiters, $encoding = null) {
+    protected static function extractFragments($text, $delimiters, $encoding = null) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
 
         // special case: split into characters
         if ( empty($delimiters) ) {
-            $chars = self::mb_str_split($text, 1);
+            $chars = static::mb_str_split($text, 1);
             $chars[] = '';
             return $chars;
         }
@@ -605,7 +605,7 @@ class FineDiff {
     /**
      * Stock opcode renderers
      */
-    private static function renderToTextFromOpcode($opcode, $from, $from_offset, $from_len, $encoding = null) {
+    protected static function renderToTextFromOpcode($opcode, $from, $from_offset, $from_len, $encoding = null) {
         if ($encoding === null) {
             $encoding = mb_internal_encoding();
         }
@@ -615,11 +615,11 @@ class FineDiff {
         }
     }
     
-    private static function mb_str_split($str, $split_length = 1) {
+    protected static function mb_str_split($str, $split_length = 1) {
         return preg_split('/(?=(.{' . (int)$split_length . '})*$)/us', $str);
         }
     
-    private static function mb_strspn($str, $delimiters, $start = 0, $length = null, $encoding = null) {
+    protected static function mb_strspn($str, $delimiters, $start = 0, $length = null, $encoding = null) {
         if($encoding === null) {
             $encoding = mb_internal_encoding();
         }
